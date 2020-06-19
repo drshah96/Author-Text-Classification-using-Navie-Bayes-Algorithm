@@ -1,0 +1,241 @@
+---
+title: "Author Text Classification using Naive Bayes Algorithm"
+author: "Dhruvin Shah"
+date: "6/19/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+This report focuses on analysis of Real time and Multivariate Dataset. It depicts the Analysis of Author Text Dataset. The model prediction in was accomplished using Naive Bayes Classification.
+
+##### Naive Bayes :
+The technique descended from the work of the 18th century mathematician Thomas Bayes, who developed foundational mathematical principles (now known as Bayesian methods) for describing the probability of events, and how probabilities should be revised in light of additional information (Lantz, 2013).
+
+## Dataset Description:
+The Dataset is a subset of RCV1 (Lewis, Yang, Rose, & and Li, 2004), a text categorization test collection dataset developed by ZhiLiu and was donated on September 08, 2011 (ZhiLiu, 2011). The dataset is composed of Top 50 Authors and Top 100 texts of the Authors and Testing Data. So, a data with 5000 instances and is divided into 2 parts: Training and Testing. The training corpus consists of 2,500 texts (50 per author) and the test corpus includes other 2,500 texts (50 per author) non-overlapping with the training texts (ZhiLiu, 2011). 
+
+##### Attributes Information:
+The dataset contains two attributes: author name and text. The author name contains 50 attribute specifies the text written by them. The text attribute contains the unprocessed text. The dataset consists total of 5000 instances.
+
+```{r}
+#Session Information
+sessionInfo()
+```
+
+## Step 1: Collecting Data
+```{r}
+#Downloading Dataset
+if(!file.exists("Data/C50.zip")){
+        #Downloading File
+        download.file(url = "http://archive.ics.uci.edu/ml//machine-learning-databases/00217/C50.zip",
+                      destfile = "Data/C50.zip")
+        
+        #Unzipping the File
+        unzip("Data/C50.zip", exdir = "Data/C50")
+}
+```
+
+```{r, include=FALSE}
+if(!require(readr)) install.packages("readr")
+if(!require(dplyr)) install.packages("dplyr")
+if(!require(data.table)) install.packages("data.table")
+if(!require(base)) install.packages("base")
+if(!require(class)) install.packages("class")
+if(!require(tm)) install.packages("tm")
+if(!require(wordcloud)) install.packages("wordcloud")
+if(!require(e1071)) install.packages("e1071")
+if(!require(gmodels)) install.packages("gmodels")
+if(!require(readtext)) install.packages("readtext")
+if(!require(png)) install.packages("png")
+```
+
+```{r, echo=TRUE}
+#Reading Data
+library(readtext)
+#Train Data File
+data_train_dir <- system.file("Data/C50/C50train/")
+Data_train <- readtext(paste0(data_train_dir, "Data/C50/C50train/*"),
+                       dvsep = "\n")
+head(Data_train$text, n = 1)
+
+#Test Data File
+data_test_dir <- system.file("Data/C50/C50test/")
+Data_test <- readtext(paste0(data_test_dir, "Data/C50/C50test/*"),
+                      dvsep = "\n")
+
+#Author Names
+Authornames <- as.data.frame(rep(basename(list.dirs("Data/C50/C50train")), each = 50))
+Authornames <- Authornames[-(1:50),]
+
+#Assigning Author name to Text
+Data_test$Author <- Authornames
+Data_train$Author <- Authornames
+
+#Dropping ID Column
+Data_test <- Data_test[-1]
+Data_train <- Data_train[-1]
+
+#Converting Author Column to Factor
+Data_test$Author <- as.factor(Data_test$Author)
+Data_train$Author <- as.factor(Data_train$Author)
+
+#Filtering Data by 4 Authors
+library(dplyr)
+library(data.table)
+AaronTrain <- Data_train %>% filter(Author == "AaronPressman", text == text)
+JaneTrain <- Data_train %>% filter(Author == "JaneMacartney", text == text)
+SarahTrain <- Data_train %>% filter(Author == "SarahDavison", text == text)
+WilliamTrain <- Data_train %>% filter(Author == "WilliamKazer", text == text)
+Data_train <- rbind(AaronTrain, JaneTrain, SarahTrain, WilliamTrain)
+
+AaronTest <- Data_test %>% filter(Author == "AaronPressman", text == text)
+JaneTest <- Data_test %>% filter(Author == "JaneMacartney", text == text)
+SarahTest <- Data_test %>% filter(Author == "SarahDavison", text == text)
+WilliamTest <- Data_test %>% filter(Author == "WilliamKazer", text == text)
+Data_test <- rbind(AaronTest, JaneTest, SarahTest, WilliamTest)
+
+dim(Data_test)
+dim(Data_train)
+
+table(Data_train$Author)
+```
+
+## Step 2 - Exploring and Preparing Data
+As a part of Exploratory Data Analysis, I found that there are no missing values in the dataset. 
+```{r, include=TRUE}
+#Checking for missing values
+#any(is.na(data_train))
+#any(is.na(data_test))
+```
+
+To analyze the textdata, the first step involves creating a corpus, which refers to a collection of text documents. The Corpus was created from the dataset using Corpus() function of “tm” package of R. It creates the R object to store text documents. The Corpus data was then cleaned using “tm_map()” function. For cleaning the corpus, the text was converted to lower case using “tolower” attribute of tm_map. Then using “removeNumbers”, “removeWords”, “stopwords()” as well as “stripWhitespace” functions, the number, stopping words and white spaces were removed. The figure shows the clean corpus element 1 of Training Dataset.
+
+```{r}
+library(tm)
+
+#Creating Corpus
+suppressWarnings(Data_test_corpus <- Corpus(VectorSource(Data_test$text)))
+suppressWarnings(Data_train_corpus <- Corpus(VectorSource(Data_train$text)))
+
+#Corpus Cleaning
+suppressWarnings(Data_test_corpus_clean <- tm_map(Data_test_corpus, tolower))
+suppressWarnings(Data_train_corpus_clean <- tm_map(Data_train_corpus, tolower))
+
+suppressWarnings(Data_test_corpus_clean <- tm_map(Data_test_corpus_clean, removeNumbers))
+suppressWarnings(Data_train_corpus_clean <- tm_map(Data_train_corpus_clean, removeNumbers))
+
+suppressWarnings(Data_test_corpus_clean <- tm_map(Data_test_corpus_clean, removeWords, stopwords()))
+suppressWarnings(Data_train_corpus_clean <- tm_map(Data_train_corpus_clean, removeWords, stopwords()))
+
+suppressWarnings(Data_test_corpus_clean <- tm_map(Data_test_corpus_clean, removePunctuation))
+suppressWarnings(Data_train_corpus_clean <- tm_map(Data_train_corpus_clean, removePunctuation))
+
+suppressWarnings(Data_test_corpus_clean <- tm_map(Data_test_corpus_clean, stripWhitespace))
+suppressWarnings(Data_train_corpus_clean <- tm_map(Data_train_corpus_clean, stripWhitespace))
+
+suppressWarnings(inspect(Data_train_corpus_clean[1]))
+```
+
+The text from Training Dataset was split according to authors. Using the “wordcloud” package of R, the most used words by authors were visualized. The following word cloud is the visualization of most frequently used words in by author in test and training database.
+
+```{r}
+#Word Cloud of Testing Dataset
+library(wordcloud)
+wordcloud(Data_test_corpus_clean, min.freq = 40, random.order = FALSE)
+```
+
+The data is then split into individual components commonly known as tokenization. The token was achieved using “DocumentTermMatrix()” function of “tm” package. This will create a data structure called Sparse Matrix in which rows indicate the Text and Column represents the word.
+
+```{r}
+#Sparse Matrix
+test_dtm <- DocumentTermMatrix(Data_test_corpus_clean)
+train_dtm <- DocumentTermMatrix(Data_train_corpus_clean)
+
+inspect(train_dtm)
+```
+
+To predict the model using Naive Bayes Classification, the training and testing datasets are obtained using frequency of words.
+
+```{r}
+##### Preparing Training and Testing Datasets #####
+### Creating Indicator features for frequent words ###
+FreqWords <- findFreqTerms(train_dtm, 5)
+
+#Saving List using Dictionary() Function
+Dictionary <- function(x) {
+        if( is.character(x) ) {
+                return (x)
+        }
+        stop('x is not a character vector')
+}
+
+data_dict <- Dictionary(findFreqTerms(train_dtm, 5))
+
+#Appending Document Term Matrix to Train and Test Dataset 
+data_train <- DocumentTermMatrix(Data_train_corpus_clean, list(data_dict))
+data_test <- DocumentTermMatrix(Data_test_corpus_clean, list(data_dict))
+
+#Converting the frequency of word to count
+convert_counts <- function(x) {
+        x <- ifelse(x > 0, 1, 0)
+        x <- factor(x, levels = c(0, 1), labels = c("No", "Yes")) 
+        return(x)
+}
+
+#Appending count function to Train and Test Dataset
+data_train <- apply(data_train, MARGIN = 2, convert_counts)
+data_test <- apply(data_test, MARGIN = 2, convert_counts)
+```
+
+## Step 3 - Training a Model
+```{r}
+#Naive Bayes Classification
+library(e1071)
+data_classifier <- naiveBayes(data_train, Data_train$Author)
+```
+
+## Step 4 - Evaluating Model Performance
+```{r}
+library(gmodels)
+data_test_pred <- predict(data_classifier, data_test)
+CrossTable(data_test_pred, Data_test$Author,
+           prop.chisq = FALSE, prop.t = FALSE,
+           dnn = c('predicted', 'actual'))
+```
+
+From the table we can observe that the accuracy achieved is 83.0%.
+
+## Step 5 - Improving Model Performance
+Setting Laplace = 1 is one way for improving performance of model. 
+```{r}
+# Setting Laplace = 1
+library(e1071)
+data_classifier2 <- naiveBayes(data_train, Data_train$Author,laplace = 1)
+
+library(gmodels)
+data_test_pred2 <- predict(data_classifier2, data_test)
+CrossTable(data_test_pred2, Data_test$Author,
+           prop.chisq = FALSE, prop.t = FALSE,
+           dnn = c('predicted', 'actual'))
+```
+
+From the table we can observe that with laplace equals to 1, the accuracy achieved is 80.5%.
+
+## Summary
+1) This algorithm constructs tables of probabilities that are used to estimate the likelihood that new examples belong to various classes.
+2) The original model is 2.5% more accurate than model with Laplace = 1.
+3) In Base Model, 34 text were misclassified while in model with Laplace = 1, 39 text out of 200 were wrongly classified constituting 19.5% of the dataset.
+4) The Model Optimization technique failed in this dataset might be because of less instances.
+
+## References
+1)	Lantz, B. (2013). Chapter 4: Probabilistic Learning – Classification Using Naive Bayes. In B. Lantz, Machine Learning with R (pp. 89 - 117). Birmingham B3 2PB, UK.: Packt Publishing Ltd.
+2)	Lewis, D. D., Yang, Y., Rose, T., & and Li, F. (2004). RCV1: A New Benchmark Collection for Text Categorization Research. Journal of Machine Learning Research,(5), 361-397.
+3)	Parsian, M. (2015). Data Algorithms. Sebastopol, CA: O’Reilly Media, Inc.
+4)	ZhiLiu. (2011, September 08). Reuter_50_50 Data Set. Retrieved from UCI Machine Learning Repository: http://archive.ics.uci.edu/ml//datasets/Reuter_50_50
+
+
+
