@@ -1,8 +1,6 @@
 ###### AUTHOR TEXT CLASSIFICATION #######
 ##### Exploratory Data Analysis #####
 
-source("Data Collection.R")
-
 #Data Preparation
 if(!require(tm)) install.packages("tm")
 library(tm)

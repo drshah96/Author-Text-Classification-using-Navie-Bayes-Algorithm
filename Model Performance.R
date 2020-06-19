@@ -1,8 +1,6 @@
 ###### AUTHOR TEXT CLASSIFICATION #######
 ##### Model Performance #####
 
-source("Data Processing.R")
-
 #Naive Bayes
 if(!require(e1071)) install.packages("e1071")
 library(e1071)
