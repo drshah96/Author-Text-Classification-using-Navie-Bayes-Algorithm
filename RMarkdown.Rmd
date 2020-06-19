@@ -232,10 +232,10 @@ From the table we can observe that with laplace equals to 1, the accuracy achiev
 4) The Model Optimization technique failed in this dataset might be because of less instances.
 
 ## References
-1)	Lantz, B. (2013). Chapter 4: Probabilistic Learning – Classification Using Naive Bayes. In B. Lantz, Machine Learning with R (pp. 89 - 117). Birmingham B3 2PB, UK.: Packt Publishing Ltd.
-2)	Lewis, D. D., Yang, Y., Rose, T., & and Li, F. (2004). RCV1: A New Benchmark Collection for Text Categorization Research. Journal of Machine Learning Research,(5), 361-397.
-3)	Parsian, M. (2015). Data Algorithms. Sebastopol, CA: O’Reilly Media, Inc.
-4)	ZhiLiu. (2011, September 08). Reuter_50_50 Data Set. Retrieved from UCI Machine Learning Repository: http://archive.ics.uci.edu/ml//datasets/Reuter_50_50
+1) Lantz, B. (2013). Chapter 4: Probabilistic Learning – Classification Using Naive Bayes. In B. Lantz, Machine Learning with R (pp. 89 - 117). Birmingham B3 2PB, UK.: Packt Publishing Ltd.
+2) Lewis, D. D., Yang, Y., Rose, T., & and Li, F. (2004). RCV1: A New Benchmark Collection for Text Categorization Research. Journal of Machine Learning Research,(5), 361-397.
+3) Parsian, M. (2015). Data Algorithms. Sebastopol, CA: O’Reilly Media, Inc.
+4) ZhiLiu. (2011, September 08). Reuter_50_50 Data Set. Retrieved from UCI Machine Learning Repository: http://archive.ics.uci.edu/ml//datasets/Reuter_50_50
 
 
 
